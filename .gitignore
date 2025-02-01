@@ -1,0 +1,4 @@
+builds/
+node_modules/
+dev/
+devinfo.txt
