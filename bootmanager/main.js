@@ -1,15 +1,17 @@
 /*
 tinkearOS boot manager version beta-1.0.0
-
-Hardware configuration, you will probably not need to change this:
 */
-const hardware = {
-    "display" : {
-        "power" : D14, //(if applicable)
-        "scl" : D0,
-        "sda": D4 
+
+const hardwareConfigurations = {
+    "m1" : {
+        "display" : {
+            "power" : D14, //(if applicable)
+            "scl" : D0,
+            "sda": D4 
+        }
     }
 }
+const hardware = hardwareConfigurations["$HWConfig_ReplacedByInstaller$"]
 
 //It is not recommended to touch the code below unless you know what you're doing.
 
@@ -54,6 +56,17 @@ let serialInterface = {
             }))
         }
     },
+    "clearOS" : () => {
+        console.log('Alright, now clearing/uninstalling tinkearOS.')
+        console.log('NOTE: User data will still be kept.')
+
+        fs.erase('os.json')
+    },
+    "clearDevice" : () => {
+        console.log('Completly clearing the device including all user data and all installed versions of tinkearOS')
+
+        fs.eraseAll()
+    }
 } 
 
 let hwInterfaces = {}
@@ -115,7 +128,7 @@ function boot() {
     }
 
     //TODO: digitally sign official builds of tinkearOS with rsa and warn the user if they're about to load an inofficial build. (requires custom build of espruino)
-    const launchOS= tryPoint(() => {return eval(osList[0].src)}, 'load the os', "asking for help on the forum or filing a bug report as long as you're using an offical build of tinkearOS.")
+    const launchOS = tryPoint(() => {return eval(osList[0].src)}, 'load the os', "asking for help on the forum or filing a bug report as long as you're using an offical build of tinkearOS.")
     try {
         console.log('Alright, attempting to launch "' + osList[0].name + '"')
         console.log('Took ' + (Date.now() - startTime) /1000 + 's for bootloader to initalize hardware and launch the OS.')
