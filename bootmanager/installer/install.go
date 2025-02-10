@@ -21,6 +21,57 @@ import (
 	"go.bug.st/serial"
 )
 
+func installBootManager(port string, config string) {
+	mode := &serial.Mode{
+		BaudRate: 115200,
+	}
+	log.Println("Connecting to device...")
+
+	device, _serialErr := serial.Open(port, mode)
+	if _serialErr != nil {
+		log.Fatal(_serialErr)
+	}
+
+	log.Println("Downloading boot manager...")
+	_bootManagerReq, err := http.Get("https://raw.githubusercontent.com/axellse/tinkear/refs/heads/main/bootmanager/main.js")
+	if err != nil {
+		log.Fatal("Could not download boot manager.")
+	}
+
+	_bootManager, err := io.ReadAll(_bootManagerReq.Body)
+	if err != nil {
+		log.Fatal("Could not download boot manager.")
+		os.Exit(1)
+	}
+
+	bootManager := strings.Replace(string(_bootManager), "$HWConfig_ReplacedByInstaller$", config, 1)
+	log.Println("Downloaded.")
+
+	log.Println("Installing boot manager...")
+
+	device.Write([]byte("let bootManagerInstallationBuffer = '';\n"))
+	time.Sleep(100 * time.Millisecond)
+	encodedBootManager := base64.StdEncoding.EncodeToString([]byte(bootManager))
+
+	totalChunks := float64(len(encodedBootManager)) / float64(40)
+	log.Println("Final boot manager size: " + strconv.Itoa(len(encodedBootManager)) + " (" + strconv.Itoa(int(totalChunks)) + " chunks)")
+	for i := 0; i < len(encodedBootManager); i += 40 {
+		log.Println("Sending chunk " + strconv.Itoa(i/40) + " (" + strconv.Itoa(int(math.Round((float64(i/40)/totalChunks)*100))) + "%)")
+		end := i + 40
+		if end > len(encodedBootManager) {
+			end = len(encodedBootManager)
+		}
+		device.Write([]byte("bootManagerInstallationBuffer += atob('" + encodedBootManager[i:end] + "');\n"))
+		time.Sleep(50 * time.Millisecond)
+	}
+	log.Println("Configuring boot manager to run at boot...")
+	device.Write([]byte("E.setBootCode(bootManagerInstallationBuffer, true);\n"))
+	time.Sleep(1000 * time.Millisecond)
+	log.Println("Closing connection...")
+	device.Close()
+	log.Println("Update complete.")
+}
+
 func installProcess(port string, config string) {
 	log.Println("Performing some pre-install checks...")
 	cmd := exec.Command("python", "--version")
@@ -117,54 +168,9 @@ func installProcess(port string, config string) {
 		log.Fatal("Could not flash Espruino firmware to the device.")
 	}
 	log.Println("Firmware flashed successfully.")
-	log.Println("Downloading boot manager...")
-	_bootManagerReq, err := http.Get("https://raw.githubusercontent.com/axellse/tinkear/refs/heads/main/bootmanager/main.js")
-	if err != nil {
-		log.Fatal("Could not download boot manager.")
-	}
-
-	_bootManager, err := io.ReadAll(_bootManagerReq.Body)
-	if err != nil {
-		log.Fatal("Could not download boot manager.")
-		os.Exit(1)
-	}
-
-	bootManager := strings.Replace(string(_bootManager), "$HWConfig_ReplacedByInstaller$", config, 1)
-	log.Println("Downloaded.")
-
-	log.Println("Establishing connection to " + port + "...")
-	mode := &serial.Mode{
-		BaudRate: 115200,
-	}
-
-	device, _serialErr := serial.Open(port, mode)
-	if _serialErr != nil {
-		log.Fatal(_serialErr)
-	}
-	log.Println("Connection established.")
-	log.Println("Installing boot manager...")
-
-	device.Write([]byte("let bootManagerInstallationBuffer = '';\n"))
-	time.Sleep(100 * time.Millisecond)
-	encodedBootManager := base64.StdEncoding.EncodeToString([]byte(bootManager))
-
-	totalChunks := float64(len(encodedBootManager)) / float64(40)
-	log.Println("Final boot manager size: " + strconv.Itoa(len(encodedBootManager)) + " (" + strconv.Itoa(int(totalChunks)) + " chunks)")
-	for i := 0; i < len(encodedBootManager); i += 40 {
-		log.Println("Sending chunk " + strconv.Itoa(i/40) + " (" + strconv.Itoa(int(math.Round((float64(i / 40) / totalChunks) * 100))) + "%)")
-		end := i + 40
-		if end > len(encodedBootManager) {
-			end = len(encodedBootManager)
-		}
-		device.Write([]byte("bootManagerInstallationBuffer += atob('" + encodedBootManager[i:end] + "');\n"))
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	log.Println("Configuring boot manager to run at boot...")
-	device.Write([]byte("E.setBootCode(bootManagerInstallationBuffer, true);\n"))
-
-	log.Println("Installation complete.")
-
+	log.Println("Waiting 20 sec for firmware to initalize.")
+	time.Sleep(20000)
+	installBootManager(port, config)
 	fmt.Println("──────────────────────────────────────────────────────────")
 	fmt.Println("\x1b[32mThe tinkearOS boot manager was successfully installed!\nVisit https://axell.me/getTiOs to get the latest version of tinkearOS running on your device!\x1b[0m")
 }
@@ -252,83 +258,11 @@ func update() {
 	}
 
 	//Actual install
-	mode := &serial.Mode{
-		BaudRate: 115200,
-	}
-	log.Println("Connecting to device...")
-
-	device, _serialErr := serial.Open(selectedPort, mode)
-	if _serialErr != nil {
-		log.Fatal(_serialErr)
-	}
-
-	log.Println("Detecting previous hardware configuration...")
-	device.Write([]byte(""))
-
-	log.Println("Downloading boot manager...")
-	_bootManagerReq, err := http.Get("https://raw.githubusercontent.com/axellse/tinkear/refs/heads/main/bootmanager/main.js")
-	if err != nil {
-		log.Fatal("Could not download boot manager.")
-	}
-
-	_bootManager, err := io.ReadAll(_bootManagerReq.Body)
-	if err != nil {
-		log.Fatal("Could not download boot manager.")
-		os.Exit(1)
-	}
-
-	bootManager := strings.Replace(string(_bootManager), "$HWConfig_ReplacedByInstaller$", selectedConfig, 1)
-	log.Println("Downloaded.")
-
-	log.Println("Installing boot manager...")
-
-	device.Write([]byte("let bootManagerInstallationBuffer = '';\n"))
-	time.Sleep(100 * time.Millisecond)
-	encodedBootManager := base64.StdEncoding.EncodeToString([]byte(bootManager))
-
-	totalChunks := float64(len(encodedBootManager)) / float64(40)
-	log.Println("Final boot manager size: " + strconv.Itoa(len(encodedBootManager)) + " (" + strconv.Itoa(int(totalChunks)) + " chunks)")
-	for i := 0; i < len(encodedBootManager); i += 40 {
-		log.Println("Sending chunk " + strconv.Itoa(i/40) + " (" + strconv.Itoa(int(math.Round((float64(i / 40) / totalChunks) * 100))) + "%)")
-		end := i + 40
-		if end > len(encodedBootManager) {
-			end = len(encodedBootManager)
-		}
-		device.Write([]byte("bootManagerInstallationBuffer += atob('" + encodedBootManager[i:end] + "');\n"))
-		time.Sleep(50 * time.Millisecond)
-	}
-	log.Println("Configuring boot manager to run at boot...")
-	device.Write([]byte("E.setBootCode(bootManagerInstallationBuffer, true);\n"))
-
-	log.Println("Update complete.")
+	installBootManager(selectedPort, selectedConfig)
 	fmt.Println("──────────────────────────────────────────────────────────")
 	fmt.Println("\x1b[32mThe tinkearOS boot manager was successfully updated/reinstalled!\x1b[0m")
 }
 
-func dump() {
-	_bootManagerReq, err := http.Get("https://raw.githubusercontent.com/axellse/tinkear/refs/heads/main/bootmanager/main.js")
-	if err != nil {
-		log.Fatal("Could not download boot manager.")
-	}
-
-	_bootManager, err := io.ReadAll(_bootManagerReq.Body)
-	if err != nil {
-		log.Fatal("Could not download boot manager.")
-		os.Exit(1)
-	}
-
-	fmt.Println("let bootManagerInstallationBuffer = '';")
-	encodedBootManager := base64.StdEncoding.EncodeToString(_bootManager)
-	for i := 0; i < len(encodedBootManager); i += 40 {
-		end := i + 40
-		if end > len(encodedBootManager) {
-			end = len(encodedBootManager)
-		}
-		fmt.Println("bootManagerInstallationBuffer += '" + encodedBootManager[i:end] + "';")
-	}
-
-	fmt.Println("E.setBootCode(atob(bootManagerInstallationBuffer), true);")
-}
 func installCommand() {
 	ports, err := serial.GetPortsList()
 	if err != nil {
@@ -425,8 +359,6 @@ func main() {
 		installCommand()
 	case "update":
 		update()
-	case "dump":
-		dump()
 	case "help":
 		fmt.Printf(
 			`
@@ -434,7 +366,6 @@ func main() {
 
 			* install - installs the boot manager and the js runtime (espruino) onto an empty device.
 			* update - updates the boot manager.
-			* dump - dumps the boot manager update command for debugging.
 			`)
 	default:
 		fmt.Println("Invalid command. Type 'help' to view all commands.")
