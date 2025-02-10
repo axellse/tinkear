@@ -1,19 +1,22 @@
 /*
 tinkearOS boot manager version beta-1.0.0
-
-Hardware configuration, you will probably not need to change this:
 */
-const hardware = {
-    "display" : {
-        "power" : D14, //(if applicable)
-        "scl" : D0,
-        "sda": D4 
+
+const hardwareConfigurations = {
+    "m1" : {
+        "display" : {
+            "power" : D14, //(if applicable)
+            "scl" : D0,
+            "sda": D4 
+        }
     }
 }
+const hardware = hardwareConfigurations["$HWConfig_ReplacedByInstaller$"]
 
 //It is not recommended to touch the code below unless you know what you're doing.
 
 const fs = require("Storage")
+fs.write('SSD1306', `function m(b){b&&(b.height&&(g[4]=b.height-1,g[15]=64==b.height||48==b.height?18:2,h[5]=(b.height>>3)-1),b.width&&(l=b.width,h[1]=(128-b.width)/2,h[2]=h[1]+b.width-1),void 0!==b.contrast&&(g[17]=b.contrast))}var l=128;var g=new Uint8Array([174,213,128,168,63,211,0,64,141,20,32,0,161,200,218,18,129,207,217,241,219,64,164,166,175]),h=[33,0,l-1,34,0,7];exports.connect=function(b,d,e){m(e);var f=Graphics.createArrayBuffer(l,g[4]+1,1,{vertical_byte:!0,msb:!1}),c=60;e&&(e.address&&\n(c=e.address),e.rst&&digitalPulse(e.rst,0,10));setTimeout(function(){g.forEach(function(a){b.writeTo(c,[0,a])})},50);void 0!==d&&setTimeout(d,100);f.flip=function(){h.forEach(function(n){b.writeTo(c,[0,n])});var a=new Uint8Array(129);a[0]=64;for(var k=0;k<this.buffer.length;k+=128)a.set(new Uint8Array(this.buffer,k,128),1),b.writeTo(c,a)};f.setContrast=function(a){b.writeTo(c,0,129,a)};f.off=function(){b.writeTo(c,0,174)};f.on=function(){b.writeTo(c,0,175)};return f};exports.connectSPI=function(b,\nd,e,f,c){m(c);var a=c?c.cs:void 0;c=Graphics.createArrayBuffer(l,g[4]+1,1,{vertical_byte:!0,msb:!1});e&&digitalPulse(e,0,10);setTimeout(function(){a&&digitalWrite(a,0);digitalWrite(d,0);b.write(g);digitalWrite(d,1);a&&digitalWrite(a,10);void 0!==f&&setTimeout(f,10)},50);c.flip=function(){a&&digitalWrite(a,0);digitalWrite(d,0);b.write(h);digitalWrite(d,1);b.write(this.buffer);a&&digitalWrite(a,1)};c.setContrast=function(k){a&&a.reset();b.write(129,k,d);a&&a.set()};c.off=function(){a&&a.reset();b.write(174,\nd);a&&a.set()};c.on=function(){a&&a.reset();b.write(175,d);a&&a.set()};return c}`)
 const SSD1306 = require("SSD1306")
 const startTime = new Date()
 
@@ -54,6 +57,17 @@ let serialInterface = {
             }))
         }
     },
+    "clearOS" : () => {
+        console.log('Alright, now clearing/uninstalling tinkearOS.')
+        console.log('NOTE: User data will still be kept.')
+
+        fs.erase('os.json')
+    },
+    "clearDevice" : () => {
+        console.log('Completly clearing the device including all user data and all installed versions of tinkearOS')
+
+        fs.eraseAll()
+    }
 } 
 
 let hwInterfaces = {}
@@ -115,7 +129,7 @@ function boot() {
     }
 
     //TODO: digitally sign official builds of tinkearOS with rsa and warn the user if they're about to load an inofficial build. (requires custom build of espruino)
-    const launchOS= tryPoint(() => {return eval(osList[0].src)}, 'load the os', "asking for help on the forum or filing a bug report as long as you're using an offical build of tinkearOS.")
+    const launchOS = tryPoint(() => {return eval(osList[0].src)}, 'load the os', "asking for help on the forum or filing a bug report as long as you're using an offical build of tinkearOS.")
     try {
         console.log('Alright, attempting to launch "' + osList[0].name + '"')
         console.log('Took ' + (Date.now() - startTime) /1000 + 's for bootloader to initalize hardware and launch the OS.')

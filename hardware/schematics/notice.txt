@@ -1,0 +1,1 @@
+When editing schematics in svg format, please use inkscape (it's free and open source) and make sure you save as an "inkscape svg".
