@@ -129,7 +129,7 @@ function boot() {
     }
 
     //TODO: digitally sign official builds of tinkearOS with rsa and warn the user if they're about to load an inofficial build. (requires custom build of espruino)
-    tryPoint(() => {eval(osList[0].src)}, 'load the os', "asking for help on the forum or filing a bug report as long as you're using an offical build of tinkearOS.")
+    const launchOS = tryPoint(() => {eval(osList[0].src)}, 'load the os', "asking for help on the forum or filing a bug report as long as you're using an offical build of tinkearOS.")
     try {
         console.log('Alright, attempting to launch "' + osList[0].name + '"')
         console.log('Took ' + (Date.now() - startTime) /1000 + 's for bootloader to initalize hardware and launch the OS.')
