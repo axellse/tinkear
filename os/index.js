@@ -1,4 +1,4 @@
-return (hwInterfaces) => {
+function launchOS(hwInterfaces) {
     console.log('hello world')
     hwInterfaces.display.clear()
     hwInterfaces.display.drawString('Hello :>', 0, 0)
