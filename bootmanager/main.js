@@ -76,12 +76,10 @@ function showBootError(type, goal, fix, e) {
         e = 'N/A'
     }
     if (type == 'err') {
-        setInterval(() => {
-            console.log('The boot manager encountered a fatal error.')
-            console.log('--------------------------------------------------')
-            console.log('Encountered an error trying to ' + goal + ', try ' + fix + '.\nError dump:\n\n' + e)
-            console.log('--------------------------------------------------')
-        }, 1000)
+        console.log('The boot manager encountered a fatal error.')
+        console.log('--------------------------------------------------')
+        console.log('Encountered an error trying to ' + goal + ', try ' + fix + '.\nError dump:\n\n' + e)
+        console.log('--------------------------------------------------')
         if (hwInterfaces.display) {
             hwInterfaces.display.drawImage(atob(resources.bootManagerErr))
             hwInterfaces.display.drawString('cant ' + goal, 1, 38)
@@ -92,12 +90,10 @@ function showBootError(type, goal, fix, e) {
         hwInterfaces.display.drawImage(atob(resources.osNotFound))
         hwInterfaces.display.flip()
     } else if (type == 'osCrash') {
-        setInterval(() => {
-            console.log('The operating system crashed.')
-            console.log('--------------------------------------------------')
-            console.log(e)
-            console.log('--------------------------------------------------')
-        }, 1000)
+        console.log('The operating system crashed.')
+        console.log('--------------------------------------------------')
+        console.log(e)
+        console.log('--------------------------------------------------')
         hwInterfaces.display.drawImage(atob(resources.osCrashed))
         hwInterfaces.display.flip()
     }
