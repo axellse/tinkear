@@ -61,4 +61,5 @@ func main() {
 	}
 
 	fmt.Println("Successfully sent encoded data to serial port")
+	fmt.Println(`serialInterface.installOs('tinkearOS via goFlash', atob('` + encoded + `'));\n`)
 }

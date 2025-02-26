@@ -168,8 +168,10 @@ func installProcess(port string, config string) {
 		log.Fatal("Could not flash Espruino firmware to the device.")
 	}
 	log.Println("Firmware flashed successfully.")
-	log.Println("Waiting 20 sec for firmware to initalize.")
-	time.Sleep(20000)
+	fmt.Println("──────────────────────────────────────────────────────────")
+	fmt.Println("\x1b[33mUnplug and plug in the device, then press ENTER.\x1b[0m")
+	bufio.NewReader(os.Stdin).ReadString('\n')
+	fmt.Println("──────────────────────────────────────────────────────────")
 	installBootManager(port, config)
 	fmt.Println("──────────────────────────────────────────────────────────")
 	fmt.Println("\x1b[32mThe tinkearOS boot manager was successfully installed!\nVisit https://axell.me/getTiOs to get the latest version of tinkearOS running on your device!\x1b[0m")
